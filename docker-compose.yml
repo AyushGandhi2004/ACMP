@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+
+  # ─────────────────────────────────────────
+  # SERVICE 1: ChromaDB (Vector Database)
+  # Runs as a standalone server
+  # Must start first — backend depends on it
+  # ─────────────────────────────────────────
+  chromadb:
+    image: chromadb/chroma:latest        # Official ChromaDB Docker image
+    restart: unless-stopped              # Auto-restart if it crashes
+    ports:
+      - "8001:8000"                      # Your machine:8001 → container:8000
+                                         # We use 8001 externally to avoid
+                                         # conflict with backend's 8000
+    volumes:
+      - chroma_data:/chroma/chroma       # Persist vector data so it survives restarts
+    networks:
+      - acmp_network                     # Join the shared private network
+
+
+  # ─────────────────────────────────────────
+  # SERVICE 2: Backend (FastAPI)
+  # Built from our own Dockerfile
+  # Depends on ChromaDB being ready
+  # ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend                 # Look for Dockerfile inside ./backend folder
+      dockerfile: Dockerfile             # Name of the Dockerfile to use
+    restart: unless-stopped
+    ports:
+      - "8000:8000"                      # Expose FastAPI on port 8000
+    volumes:
+      - ./backend:/app                   # Mount backend code for live reload
+      - ./temp_sandboxes:/temp_sandboxes # Mount sandbox folder for Docker execution
+      - /var/run/docker.sock:/var/run/docker.sock  # Give backend access to Docker
+                                                    # so Validator agent can spin up containers
+    env_file:
+      - .env                             # Load all environment variables from .env
+    depends_on:
+      - chromadb                         # Wait for ChromaDB to start first
+    networks:
+      - acmp_network
+
+
+  # ─────────────────────────────────────────
+  # SERVICE 3: Frontend (React + Vite)
+  # Built from our own Dockerfile
+  # Depends on backend being ready
+  # ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend                # Look for Dockerfile inside ./frontend folder
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:5173"                      # Expose Vite dev server on port 5173
+    volumes:
+      - ./frontend:/app                  # Mount frontend code for live reload
+      - /app/node_modules                # Prevent host node_modules from overwriting
+                                         # the container's node_modules
+    env_file:
+      - .env                             # Load environment variables from .env
+    depends_on:
+      - backend                          # Wait for backend to start first
+    networks:
+      - acmp_network
+
+
+# ─────────────────────────────────────────
+# NETWORK
+# One private network shared by all services
+# This allows services to call each other
+# by service name e.g. chromadb:8000
+# ─────────────────────────────────────────
+networks:
+  acmp_network:
+    driver: bridge
+
+
+# ─────────────────────────────────────────
+# VOLUMES
+# Named volumes managed by Docker
+# Data persists even if containers restart
+# ─────────────────────────────────────────
+volumes:
+  chroma_data:                           # ChromaDB vector data
+  temp_sandboxes:                        # Sandbox execution temp files

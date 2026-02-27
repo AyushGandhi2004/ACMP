@@ -1,0 +1,21 @@
+.env
+
+#Python:
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+
+#Node:
+node-modules/
+dist/
+
+#Run time data:
+chroma_data/
+temp_sandboxes/
+
+#IDE:
+.vscode/
+
