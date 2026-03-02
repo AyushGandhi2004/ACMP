@@ -31,7 +31,7 @@ class AgentEvent(BaseModel):
     data : Optional[dict] = Field(..., default=None)
 
 class ModernizationResult(BaseModel):
-    sessio_id : str 
+    session_id : str 
     original_code : str
     modern_code : str
     language : SupportedLanguage

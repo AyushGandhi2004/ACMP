@@ -1,0 +1,92 @@
+# ─────────────────────────────────────────
+# PYTHON CACHE
+# Never needed inside container
+# Generated automatically by Python
+# ─────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+
+# ─────────────────────────────────────────
+# VIRTUAL ENVIRONMENTS
+# Container uses its own Python environment
+# Local venv should never be copied in
+# ─────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+
+# ─────────────────────────────────────────
+# ENVIRONMENT FILES
+# CRITICAL — never bake secrets into image
+# .env is injected at runtime by
+# docker-compose via env_file directive
+# ─────────────────────────────────────────
+.env
+*.env
+.env.*
+
+
+# ─────────────────────────────────────────
+# TESTING
+# Tests are not needed inside container
+# Run tests locally or in CI pipeline
+# ─────────────────────────────────────────
+tests/
+.pytest_cache/
+pytest.ini
+.coverage
+htmlcov/
+
+
+# ─────────────────────────────────────────
+# IDE AND EDITOR FILES
+# Not needed inside container
+# ─────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+
+# ─────────────────────────────────────────
+# GIT
+# Version control files not needed
+# inside the container
+# ─────────────────────────────────────────
+.git/
+.gitignore
+
+
+# ─────────────────────────────────────────
+# DOCKER FILES THEMSELVES
+# No need to copy Dockerfile into image
+# ─────────────────────────────────────────
+Dockerfile
+.dockerignore
+
+
+# ─────────────────────────────────────────
+# DOCUMENTATION
+# Not needed at runtime
+# ─────────────────────────────────────────
+README.md
+*.md
+docs/
+
+
+# ─────────────────────────────────────────
+# TEMPORARY FILES
+# Runtime generated — never commit or copy
+# ─────────────────────────────────────────
+*.log
+*.tmp
+temp/
+tmp/

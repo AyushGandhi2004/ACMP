@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     chroma_host : str
     chroma_port : int
     chroma_collection_name : str
+    chunk_size : int
+    chunk_overlap : int
 
     backend_host : str
     backend_port : int
