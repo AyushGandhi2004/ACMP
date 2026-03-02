@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, END
-from backend.app.graph.nodes import profiler_node, anchor_node,architect_node, engineer_node, tester_node, fixer_node
-from backend.app.graph.state import AgentState
-from backend.app.graph.edges import after_validator
+from app.graph.nodes import profiler_node, anchor_node,architect_node, engineer_node, tester_node, fixer_node
+from app.graph.state import AgentState
+from app.graph.edges import after_validator
 
 def build_pipeline():
     """

@@ -1,7 +1,7 @@
 
-from backend.app.domain.models import AgentEvent
-from backend.app.graph.state import AgentState
-from backend.app.core.config import get_settings
+from app.domain.models import AgentEvent
+from app.graph.state import AgentState
+from app.core.config import get_settings
 
 settings = get_settings()
 
@@ -29,9 +29,9 @@ def profiler_node(state : AgentState):
         )
     
     metadata = {
-        "language" : ,
-        "framework" : ,
-        "version" : 
+        "language" : "python",
+        "framework" : "",
+        "version" : ""
     }
 
     completed_event = create_event(
