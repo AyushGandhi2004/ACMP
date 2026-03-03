@@ -1,53 +1,45 @@
 # ─────────────────────────────────────────
-# BASE IMAGE
-# Node 20 slim variant
-# Slim = smaller size, fewer system tools
+# NODE MODULES
+# Container installs its own node_modules
+# Never copy local ones into container
 # ─────────────────────────────────────────
-FROM node:20-slim
+node_modules/
+dist/
 
 
 # ─────────────────────────────────────────
-# WORKING DIRECTORY
-# All subsequent commands run from here
+# ENVIRONMENT FILES
+# Never bake env vars into the image
 # ─────────────────────────────────────────
-WORKDIR /app
+.env
+*.env
+.env.*
 
 
 # ─────────────────────────────────────────
-# DEPENDENCIES
-# Copy package files FIRST before code
-# Same caching optimization as backend:
-#
-# If code changes     → only code layer rebuilds
-# If packages change  → everything below rebuilds
-#
-# npm ci is faster and more reliable than
-# npm install for Docker builds — it installs
-# exactly what is in package-lock.json
+# IDE AND OS FILES
 # ─────────────────────────────────────────
-COPY package*.json .
-
-RUN npm ci
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
 
 
 # ─────────────────────────────────────────
-# APPLICATION CODE
-# Copied AFTER dependencies for caching
+# GIT
 # ─────────────────────────────────────────
-COPY . .
+.git/
+.gitignore
 
 
 # ─────────────────────────────────────────
-# PORT
-# Vite dev server runs on 5173
+# DOCKER FILES THEMSELVES
 # ─────────────────────────────────────────
-EXPOSE 5173
+Dockerfile
+.dockerignore
 
 
 # ─────────────────────────────────────────
-# STARTUP COMMAND
-# --host 0.0.0.0 — accept connections from
-#                  outside the container
-#                  required for Docker networking
+# DOCS
 # ─────────────────────────────────────────
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+README.md
