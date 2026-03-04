@@ -9,18 +9,11 @@ from app.graph.pipeline import graph
 from app.graph.state import AgentState
 
 
-# ─────────────────────────────────────────
-# ROUTER
-# ─────────────────────────────────────────
-
 router = APIRouter()
 
 
 # ─────────────────────────────────────────
 # IN MEMORY RESULT STORE
-# Stores final pipeline results keyed by session_id
-# Allows GET /result/{session_id} to retrieve them
-# Can be swapped to Redis in production
 # ─────────────────────────────────────────
 
 pipeline_results: dict[str, dict] = {}
@@ -28,8 +21,9 @@ pipeline_results: dict[str, dict] = {}
 
 # ─────────────────────────────────────────
 # BACKGROUND TASK
-# Runs the full LangGraph pipeline
-# Streams events to frontend via WebSocket
+# Runs the full LangGraph pipeline ONCE
+# Captures final state from last snapshot
+# Streams events to WebSocket as it runs
 # ─────────────────────────────────────────
 
 async def execute_pipeline(
@@ -37,78 +31,68 @@ async def execute_pipeline(
     initial_state: AgentState
 ) -> None:
     """
-    Background task that runs the full ACMP pipeline.
-    Invoked by the /run endpoint via BackgroundTasks.
+    Runs the ACMP pipeline exactly ONCE using astream.
+
+    astream yields a snapshot after each node completes.
+    Each snapshot is a dict: { "node_name": {fields node updated} }
+
+    LangGraph merges state across nodes internally.
+    We track the last snapshot to get the final merged state.
 
     Flow:
-        1. Run LangGraph pipeline with initial state
-        2. After each node — broadcast new events via WebSocket
-        3. On completion — store result + send final event
-        4. On failure — send error event + store failed result
-
-    Args:
-        session_id:    Unique identifier for this run
-        initial_state: Initial AgentState with code and session_id
+        astream yields node snapshots
+            → we broadcast new events after each node
+            → we track the last snapshot
+        After stream ends → last snapshot has final state
+            → build result → store → send completion event
     """
+
     try:
-        # ── Track which events have been sent ────────
-        # LangGraph returns ALL events in state after each node
-        # We track the last sent index to send only NEW events
         last_sent_index = 0
+        final_state = None
 
-        # ── Stream pipeline execution ─────────────────
-        # astream returns state snapshots after each node
-        async for state_snapshot in graph.astream(
+        # ── stream_mode="values" gives complete ──
+        # accumulated state after each node
+        # instead of just the node's output delta
+        async for current_state in graph.astream(
             initial_state,
-            config={"recursion_limit": 50}
+            config={"recursion_limit": 50},
+            stream_mode="values"    # ← KEY CHANGE
         ):
-            # Each snapshot is a dict:
-            # {"node_name": updated_state_fields}
-            # We need to get the actual state values
-            for node_name, node_output in state_snapshot.items():
+            # current_state is now the FULL merged state
+            # not just what the last node updated
+            # print("\n\n\nCurrent State Snapshot:\n", current_state)
+            final_state = current_state
 
-                # Get all events accumulated so far
-                all_events = node_output.get("events", [])
+            # Events list is fully accumulated
+            # so last_sent_index tracking works correctly
+            all_events = current_state.get("events", [])
+            new_events  = all_events[last_sent_index:]
 
-                # Send only new events since last broadcast
-                new_events = all_events[last_sent_index:]
-                if new_events:
-                    await manager.broadcast_pipeline_events(
-                        session_id,
-                        new_events
-                    )
-                    last_sent_index = len(all_events)
+            if new_events:
+                await manager.broadcast_pipeline_events(
+                    session_id,
+                    new_events
+                )
+                last_sent_index = len(all_events)
 
-        # ── Pipeline complete ─────────────────────────
-        # Get the final state by invoking once more
-        # to get the complete merged state
-        final_state = await graph.ainvoke(
-            initial_state,
-            config={"recursion_limit": 50}
-        )
+        # ── Pipeline complete ─────────────────────
+        if not final_state:
+            raise ValueError("Pipeline produced no output")
 
-        # ── Build result object ───────────────────────
         result = ModernizationResult(
             session_id=session_id,
             original_code=final_state.get("original_code", ""),
             modern_code=final_state.get("modern_code", ""),
-            language=final_state.get("metadata", {}).get(
-                "language", "unknown"
-            ),
-            framework=final_state.get("metadata", {}).get(
-                "framework", "unknown"
-            ),
-            transformation_plan=final_state.get(
-                "transformation_plan", {}
-            ),
+            language=final_state.get("metadata", {}).get("language", "unknown"),
+            framework=final_state.get("metadata", {}).get("framework", "unknown"),
+            transformation_plan=final_state.get("transformation_plan", {}),
             error_logs=final_state.get("error_logs", ""),
             status=final_state.get("status", "unknown")
         )
 
-        # ── Store result for GET /result/{session_id} ─
         pipeline_results[session_id] = result.model_dump()
 
-        # ── Send completion event via WebSocket ───────
         await manager.send_event(session_id, {
             "type":   "pipeline_complete",
             "status": final_state.get("status", "unknown"),
@@ -116,59 +100,38 @@ async def execute_pipeline(
         })
 
     except Exception as e:
-        # ── Handle pipeline failure ───────────────────
         error_result = {
             "session_id": session_id,
             "status":     "failed",
             "error":      str(e)
         }
-
-        # Store failed result
         pipeline_results[session_id] = error_result
 
-        # Notify frontend of failure
         await manager.send_event(session_id, {
             "type":    "pipeline_error",
             "status":  "failed",
             "message": f"Pipeline failed: {str(e)}"
         })
 
-
 # ─────────────────────────────────────────
 # POST /run
-# Triggers a new pipeline run
-# Returns session_id immediately
-# Pipeline runs in background
 # ─────────────────────────────────────────
 
-@router.post(
-    "/run",
-    response_model=PipelineResponse,
-    status_code=201
-)
+@router.post("/run", response_model=PipelineResponse, status_code=201)
 async def run_pipeline(
     request: PipelineRequest,
     background_tasks: BackgroundTasks
 ) -> PipelineResponse:
     """
-    Start a new code modernization pipeline run.
-
-    Immediately returns a session_id.
-    Frontend uses session_id to open WebSocket
-    and receive live agent updates.
-
-    Args:
-        request:          PipelineRequest with code + optional language
-        background_tasks: FastAPI BackgroundTasks for async execution
-
-    Returns:
-        PipelineResponse with session_id, status, message
+    Accepts code from frontend.
+    Builds initial state.
+    Kicks off pipeline as background task.
+    Returns session_id immediately.
+    Frontend opens WebSocket using session_id
+    to receive live events.
     """
-
-    # Generate unique session ID for this run
     session_id = str(uuid4())
 
-    # Build initial pipeline state
     initial_state: AgentState = {
         "session_id":          session_id,
         "original_code":       request.code,
@@ -185,8 +148,11 @@ async def run_pipeline(
         "events":              []
     }
 
-    # Add pipeline execution as background task
-    # Route returns immediately — pipeline runs async
+    # ── This is where the graph gets invoked ──
+    # BackgroundTasks runs execute_pipeline
+    # AFTER the response is sent to frontend
+    # Frontend immediately opens WebSocket
+    # Pipeline streams events through manager
     background_tasks.add_task(
         execute_pipeline,
         session_id,

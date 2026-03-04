@@ -2,13 +2,14 @@ import axios from 'axios'
 
 const api = axios.create({
     baseURL : import.meta.env.VITE_API_BASE_URL,
-    headers : {"Content-Type":"application-json"}
+    headers : {"Content-Type":"application/json"}
 });
 
-export const runPipeline = async (code , language=NULL) =>{
-    const payload = code;
+export const runPipeline = async (code , language=null) =>{
+    const payload = {"code": code};
     if(language && language!=='auto'){
         payload.language = language;
+        console.log('payload language:', payload.language);
     }
     const response = await api.post('api/v1/pipeline/run', payload);
     return response.data;

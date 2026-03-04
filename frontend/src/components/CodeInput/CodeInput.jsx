@@ -53,8 +53,12 @@ export default function CodeInput() {
         // Auto detect language from extension
         const ext = file.name.split('.').pop()?.toLowerCase();
         const detectedLanguage = SUPPORTED_EXTENSIONS[ext];
+        // console.log('detected lang:', detectedLanguage);
         if (detectedLanguage) {
             setSelectedLanguage(detectedLanguage);
+        }
+        else {
+            return alert(`Unsupported file type .${ext}\nSupported types: ${Object.keys(SUPPORTED_EXTENSIONS).join(', ')}`);
         }
 
         // Read file content into store

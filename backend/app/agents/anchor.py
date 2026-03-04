@@ -11,10 +11,10 @@ from app.core.config import get_settings
 # ─────────────────────────────────────────
 
 SYSTEM_PROMPT = """
-You are a senior software engineer specialized in writing 
+You are a senior software engineer specialized in writing
 comprehensive unit tests.
 
-Your job is to analyze the provided source code and generate 
+Your job is to analyze the provided source code and generate
 unit tests that completely lock in the original behavior.
 
 STRICT RULES:
@@ -29,6 +29,13 @@ STRICT RULES:
     TypeScript  → jest
     Java        → JUnit
 
+CRITICAL IMPORT RULE — THIS IS THE MOST IMPORTANT RULE:
+- The source file is ALWAYS named 'main' regardless of original name
+- Python imports MUST be:  from main import function_name
+- JS/TS imports MUST be:   const x = require('./main')
+- NEVER import from any other filename
+- NEVER use the original filename in imports
+
 TEST REQUIREMENTS:
 - Test every function present in the code
 - Test normal expected inputs
@@ -42,13 +49,22 @@ HUMAN_PROMPT = """
 Generate comprehensive unit tests for this {language} code.
 Framework detected: {framework}
 
+CRITICAL IMPORT RULE:
+- The source code will ALWAYS be saved as a file named 'main'
+- Python  → always import from 'main'     e.g. from main import my_function
+- JS/TS   → always import from './main'   e.g. const x = require('./main')
+- Java    → the class will be in Main.java, import accordingly
+- NEVER import from the original filename
+- NEVER use the word '{source_name}' in any import statement
+
 Original code to test:
 
 {code}
 
 Remember:
 - Test every function
-- Cover edge cases
+- Cover edge cases  
+- Always import from 'main' not from any other filename
 - Return ONLY raw test code
 - No explanations or markdown
 """
@@ -127,13 +143,15 @@ class AnchorAgent(BaseAgent):
         metadata      = state.get("metadata", {})
         language      = metadata.get("language", "unknown")
         framework     = metadata.get("framework", "unknown")
+        source_name = metadata.get("source_name", "original_file")
 
         messages = [
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessage(content=HUMAN_PROMPT.format(
                 language=language,
                 framework=framework,
-                code=original_code
+                code=original_code,
+                source_name=source_name
             ))
         ]
 
@@ -142,6 +160,8 @@ class AnchorAgent(BaseAgent):
 
         # Clean response
         unit_tests = self._clean_response(response.content)
+
+        print("\n\nGenerated Unit Tests:\n", unit_tests)
 
         return {
             "unit_tests": unit_tests

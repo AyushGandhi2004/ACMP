@@ -144,6 +144,8 @@ class ProfilerAgent(BaseAgent):
         # Parse and validate the response
         metadata = self._parse_response(response.content)
 
+        print("\n[ProfilerAgent] Detected Metadata:\n", metadata)
+
         return {
             "metadata": metadata
         }

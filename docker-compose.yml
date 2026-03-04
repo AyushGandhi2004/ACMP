@@ -34,7 +34,7 @@ services:
       - "8000:8000"                      # Expose FastAPI on port 8000
     volumes:
       - ./backend:/app                   # Mount backend code for live reload
-      - ./temp_sandboxes:/temp_sandboxes # Mount sandbox folder for Docker execution
+      # - temp_sandboxes:/temp_sandboxes # Mount sandbox folder for Docker execution
       - /var/run/docker.sock:/var/run/docker.sock  # Give backend access to Docker
                                                     # so Validator agent can spin up containers
     env_file:
@@ -87,4 +87,4 @@ networks:
 # ─────────────────────────────────────────
 volumes:
   chroma_data:                           # ChromaDB vector data
-  temp_sandboxes:                        # Sandbox execution temp files
+  # temp_sandboxes:                        # Sandbox execution temp files

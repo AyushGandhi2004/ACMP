@@ -186,6 +186,8 @@ class EngineerAgent(BaseAgent):
         # Clean response
         modern_code = self._clean_response(response.content)
 
+        print("\n\nmodern_code produced\n")  # Debugging output
+
         return {
             "modern_code": modern_code
         }

@@ -67,8 +67,9 @@ const usePipeline = () => {
     const startPipeline = async () => {
         const code = originalCode;
         const language = selectedLanguage === 'auto'
-            ? null
-            : selectedLanguage;
+        ? null
+        : selectedLanguage;
+        // console.log('selected language:', language);
 
         // ── Step 1: Validate input ────────────
         const validationError = validateInput(code);
@@ -106,10 +107,17 @@ const usePipeline = () => {
 
         } catch (err) {
             // ── Handle submission error ───────
-            const errorMessage =
-                err.response?.data?.detail ||
-                err.message ||
-                'Failed to start pipeline. Is the backend running?';
+            const rawDetail = err.response?.data?.detail;
+            let errorMessage;
+            if (Array.isArray(rawDetail)) {
+                // FastAPI 422 returns detail as [{msg, loc, ...}]
+                errorMessage = rawDetail.map(e => e.msg).join('; ');
+            } else {
+                errorMessage =
+                    rawDetail ||
+                    err.message ||
+                    'Failed to start pipeline. Is the backend running?';
+            }
 
             setError(errorMessage);
             setPipelineStatus('failed');

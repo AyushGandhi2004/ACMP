@@ -211,6 +211,8 @@ class FixerAgent(BaseAgent):
         # Clean response
         fixed_code = self._clean_response(response.content)
 
+        print("\n\n[FixerAgent] LLM Responded\n", retry_count)
+
         # Increment retry count
         new_retry_count = retry_count + 1
 

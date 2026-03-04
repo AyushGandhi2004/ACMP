@@ -30,8 +30,8 @@ const AGENTS = [
         description: 'Modernizes the code',
     },
     {
-        id:          'validator',
-        label:       'Validator',
+        id:          'tester',
+        label:       'Tester',
         description: 'Runs tests in Docker',
     },
     {

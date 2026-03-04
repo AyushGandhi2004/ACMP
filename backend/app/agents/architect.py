@@ -208,6 +208,8 @@ class ArchitectAgent(BaseAgent):
         # Step 4 — Parse and validate response
         transformation_plan = self._parse_response(response.content)
 
+        print("\n\nArchitect Agent - Transformation Plan:\n", transformation_plan)
+
         return {
             "transformation_plan": transformation_plan
         }
