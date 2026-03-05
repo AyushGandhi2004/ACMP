@@ -387,12 +387,6 @@ docker compose up --build
 
 ---
 
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
 ## Acknowledgements
 
 - [Groq](https://groq.com) — blazing fast LLM inference
