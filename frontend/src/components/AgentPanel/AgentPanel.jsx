@@ -15,11 +15,6 @@ const AGENTS = [
         description: 'Detects language & framework',
     },
     {
-        id:          'logic_anchor',
-        label:       'Logic Anchor',
-        description: 'Generates unit tests',
-    },
-    {
         id:          'architect',
         label:       'Architect',
         description: 'Builds transformation plan',
@@ -32,7 +27,7 @@ const AGENTS = [
     {
         id:          'tester',
         label:       'Tester',
-        description: 'Runs tests in Docker',
+        description: 'Checks syntax in Docker',
     },
     {
         id:          'fixer',
@@ -194,7 +189,7 @@ function AgentCard({ agent, status, message }) {
 
 // ─────────────────────────────────────────
 // AGENT PANEL COMPONENT
-// Shows all 6 agents as cards in a row
+// Shows all active agents as cards in a row
 // Updates live via WebSocket events
 // ─────────────────────────────────────────
 
@@ -230,7 +225,7 @@ export default function AgentPanel() {
             </div>
 
             {/* ── Agent Cards Grid ─────────────── */}
-            <div className="grid grid-cols-6 gap-3">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                 {AGENTS.map((agent) => {
                     const status  = getAgentStatus(agent.id, agentEvents);
                     const message = getAgentMessage(agent.id, agentEvents);

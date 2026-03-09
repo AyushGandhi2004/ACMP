@@ -50,6 +50,7 @@ export default function LanguageSelector() {
         selectedLanguage,
         setSelectedLanguage,
         detectedLanguage,
+        inputMode,
         pipelineStatus,
     } = usePipelineStore();
 
@@ -78,11 +79,18 @@ export default function LanguageSelector() {
                     <option
                         key={lang.value}
                         value={lang.value}
+                        disabled={lang.value === 'auto' && inputMode === 'paste'}
                     >
                         {lang.label}
                     </option>
                 ))}
             </select>
+
+            {inputMode === 'paste' && selectedLanguage === 'auto' && (
+                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">
+                    Auto detect is available only in file upload mode
+                </p>
+            )}
 
             {/* ── Auto detected badge ───────────── */}
             {/* Shows when Profiler has detected    */}

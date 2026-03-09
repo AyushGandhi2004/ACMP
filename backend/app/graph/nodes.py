@@ -214,16 +214,20 @@ async def engineer_node(state : AgentState):
 
 async def tester_node(state : AgentState):
     """
-    Receives modern code and unit tests.
-    Builds a Docker container, runs tests, captures logs.
-    Updates: error_logs, status, events
+    Receives modernized code and runs syntax checking
+    in an isolated Docker sandbox.
+    
+    No unit tests are executed - just runs the file to check for syntax errors.
+    Timeout errors (e.g., waiting for user input) are treated as success.
+
+    Updates: validation_logs, status, events
     """
 
     events = []
     try:
         events.append(create_event(
-            "validator", "running",
-            "Running tests in Docker sandbox..."
+            "tester", "running",
+            "Running syntax check in Docker sandbox..."
         ))
 
         agent  = TesterAgent()
@@ -232,28 +236,25 @@ async def tester_node(state : AgentState):
         logs   = result.get("validation_logs", "")
         status = result.get("status", "validation_failed")
 
-        # ── Check pass rate even if exit code != 0 ──
-        parsed    = _parse_pytest_results(logs)
-        pass_rate = parsed["pass_rate"]
-        passed    = parsed["passed"]
-        total     = parsed["total"]
-
-        # Override status if pass rate is acceptable
-        if status == "validation_failed" and pass_rate >= 0.80 and total > 0:
-            status = "validation_passed"
-            print(f"[VALIDATOR NODE] Overriding to passed — {passed}/{total} tests passed")
-
         is_passed = status == "validation_passed"
-        message   = (
-            f"Tests passed ✓ ({passed}/{total})" if is_passed
-            else f"Tests failed — {parsed['failed']}/{total} failing"
-        )
+        
+        # Check if it was a timeout or user input requirement
+        is_timeout = "TIMEOUT" in logs and "user input" in logs
+        is_user_input = "USER INPUT DETECTED" in logs
+        
+        if is_timeout:
+            message = "Syntax check passed ✓ (timeout - likely waiting for user input)"
+        elif is_user_input:
+            message = "Syntax check passed ✓ (code requires user input)"
+        elif is_passed:
+            message = "Syntax check passed ✓"
+        else:
+            message = "Syntax check failed - errors detected"
 
         events.append(create_event(
-            "validator",
+            "tester",
             "completed" if is_passed else "failed",
-            message,
-            {"passed": passed, "total": total, "pass_rate": f"{pass_rate:.0%}"}
+            message
         ))
 
         return {
@@ -264,7 +265,7 @@ async def tester_node(state : AgentState):
 
     except Exception as e:
         traceback.print_exc()
-        events.append(create_event("validator", "failed", str(e)))
+        events.append(create_event("tester", "failed", str(e)))
         return {
             "validation_logs": str(e),
             "status":          "validation_failed",

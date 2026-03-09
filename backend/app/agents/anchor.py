@@ -36,6 +36,48 @@ CRITICAL IMPORT RULE — THIS IS THE MOST IMPORTANT RULE:
 - NEVER import from any other filename
 - NEVER use the original filename in imports
 
+FRAMEWORK-SPECIFIC TESTING RULES:
+
+For REACT components:
+- Use @testing-library/react ONLY
+- Import: const { render, screen, fireEvent } = require('@testing-library/react')
+- Import component: const { MyComponent } = require('./main')
+- NEVER import ReactDOM — testing-library handles rendering
+- NEVER import React directly — not needed with automatic JSX runtime
+- NEVER call ReactDOM.render() or ReactDOM.createRoot() in tests
+- Test rendered output using screen.getByText(), screen.getByRole() etc.
+- For click events use: fireEvent.click(element)
+```
+
+---
+
+## Why This Chain Of Errors Happens
+```
+Engineer puts createRoot at bottom of main.js
+    ↓
+Test does require('./main')
+    ↓
+Node executes entire main.js including createRoot()
+    ↓
+createRoot needs a DOM element: document.getElementById("root")
+    ↓
+In test environment "root" div doesn't exist in jsdom
+    ↓ (or React version mismatch)
+createRoot is not a function / root is null
+    ↓
+Entire test suite crashes before running a single test
+    ↓
+0/0 tests pass → 0% pass rate → sent to Fixer → loops forever
+
+For EXPRESS apps:
+- Use supertest for HTTP assertions
+- Import: const request = require('supertest')
+- Import app: const app = require('./main')
+
+For plain JAVASCRIPT:
+- Use jest directly
+- Import: const { myFunction } = require('./main')
+
 TEST REQUIREMENTS:
 - Test every function present in the code
 - Test normal expected inputs

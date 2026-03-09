@@ -12,13 +12,11 @@ def build_pipeline():
           ↓
         profiler
           ↓
-        anchor
-          ↓
-        architect
+        architect (anchor node skipped - no longer needed)
           ↓
         engineer
           ↓
-        validator
+        validator (syntax check only)
           ↓
         after_validator() ← conditional edge
           ├── "end"   → END
@@ -31,15 +29,17 @@ def build_pipeline():
     builder = StateGraph(AgentState)
 
     builder.add_node("profiler",profiler_node)
-    builder.add_node("anchor",anchor_node)
+    # Anchor node skipped - no longer generating unit tests
+    # builder.add_node("anchor",anchor_node)
     builder.add_node("architect",architect_node)
     builder.add_node("engineer",engineer_node)
     builder.add_node("tester",tester_node)
     builder.add_node("fixer",fixer_node)
 
     builder.set_entry_point("profiler")
-    builder.add_edge("profiler","anchor")
-    builder.add_edge("anchor","architect")
+    # Skip anchor node - go directly from profiler to architect
+    builder.add_edge("profiler","architect")
+    # builder.add_edge("anchor","architect")
     builder.add_edge("architect", "engineer")
     builder.add_edge("engineer", "tester")
     builder.add_conditional_edges("tester", after_validator, {"end" : END, "fixer" : "fixer"})

@@ -26,6 +26,8 @@ const usePipeline = () => {
     const {
         originalCode,
         selectedLanguage,
+        inputMode,
+        selectedFile,
         setSessionId,
         setPipelineStatus,
         setIsLoading,
@@ -66,6 +68,26 @@ const usePipeline = () => {
 
     const startPipeline = async () => {
         const code = originalCode;
+
+        // Auto language detection is only valid for file upload mode.
+        if (inputMode === 'paste' && selectedLanguage === 'auto') {
+            const message =
+                'Please select a language before running the pipeline.\n\n' +
+                'Auto Detect works only in File Upload mode.';
+            alert(message);
+            setError('Select a language for pasted code. Auto Detect is available only for file upload mode.');
+            return;
+        }
+
+        if (inputMode === 'upload' && selectedLanguage === 'auto' && !selectedFile) {
+            const message =
+                'Auto Detect works only after a file is uploaded.\n\n' +
+                'Please upload a file or select a language manually.';
+            alert(message);
+            setError('Upload a file to use Auto Detect, or choose a language manually.');
+            return;
+        }
+
         const language = selectedLanguage === 'auto'
         ? null
         : selectedLanguage;
