@@ -400,3 +400,6 @@ docker compose up --build
 - Make it compatible with AI Agents like cursor.
 - Fine Tuning it for better results.
 - Bringing more language and framework support.
+- Making the system prompt more dynamic for the part that involves language and framework specific instructions to reduce the token costs.
+- Implement Logger for better debugging capabilities.
+- Improve the tester, make it more faster, compatible with all the language and frameworks ans lightweight.

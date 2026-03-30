@@ -16,7 +16,7 @@ const SUPPORTED_EXTENSIONS = {
     java: 'java',
 };
 
-const ACCEPT_STRING = '.py,.js,.jsx,.ts,.tsx,.java';
+const ACCEPT_STRING = '.py,.js,.jsx,.ts,.tsx';
 
 
 // ─────────────────────────────────────────
