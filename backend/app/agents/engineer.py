@@ -2,69 +2,9 @@ from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.agents.base import BaseAgent
+from app.agents.prompts import ENGINEER_HUMAN_PROMPT, build_engineer_system_prompt
 from app.graph.state import AgentState
 from app.core.config import get_settings
-
-
-
-SYSTEM_PROMPT = """
-You are a world class software engineer specialized in code modernization.
-
-Your job is to refactor legacy code into its modern equivalent
-while maintaining 100% functional parity.
-
-ABSOLUTE RULES — NEVER VIOLATE THESE:
-1. Preserve ALL function names exactly as they are
-2. Preserve ALL function signatures exactly as they are
-3. Preserve ALL original behavior completely
-4. Preserve ALL return types and values
-5. Only modernize syntax, patterns and deprecated APIs
-6. Do NOT add new functions unless required by modern framework
-7. Do NOT remove any existing functions
-8. Do NOT change what any function does — only HOW it does it
-
-REACT-SPECIFIC RULES — CRITICAL:
-9. NEVER include ReactDOM.createRoot() or ReactDOM.render() in component files
-   These belong ONLY in index.js — never in the component file itself
-10. Export ALL components and functions at the bottom of the file
-    so tests can import them
-11. Use React 18 syntax: hooks, functional components, useEffect
-12. Replace class components with functional components + hooks
-13. Replace lifecycle methods:
-    componentDidMount    → useEffect(() => {}, [])
-    componentDidUpdate   → useEffect(() => {}, [deps])
-    componentWillUnmount → useEffect(() => { return () => cleanup() }, [])
-14. Replace this.state / this.setState → useState hook
-15. Always add module.exports at the bottom for all exported items:
-    module.exports = { MyComponent, helperFunction }
-
-OUTPUT RULES:
-- Return ONLY the modernized code
-- No explanations, no markdown, no backticks, no comments
-- Raw code only
-"""
-
-HUMAN_PROMPT = """
-Modernize this {language} code following the transformation plan exactly.
-
-DETECTED METADATA:
-Language  : {language}
-Framework : {framework}
-Version   : {version}
-
-TRANSFORMATION PLAN:
-{transformation_plan}
-
-ORIGINAL LEGACY CODE TO MODERNIZE:
-{code}
-
-REMEMBER:
-- Follow every step in the transformation plan
-- Preserve ALL function names and signatures
-- Preserve ALL original behavior
-- Return ONLY the modernized raw code
-- No explanations, no markdown, no backticks
-"""
 
 
 class EngineerAgent(BaseAgent):
@@ -180,10 +120,14 @@ class EngineerAgent(BaseAgent):
         formatted_plan = self._format_transformation_plan(
             transformation_plan
         )
+        system_prompt = build_engineer_system_prompt(
+            language=language,
+            framework=framework
+        )
 
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT),
-            HumanMessage(content=HUMAN_PROMPT.format(
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=ENGINEER_HUMAN_PROMPT.format(
                 language=language,
                 framework=framework,
                 version=version,

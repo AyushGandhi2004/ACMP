@@ -403,3 +403,5 @@ docker compose up --build
 - Making the system prompt more dynamic for the part that involves language and framework specific instructions to reduce the token costs.
 - Implement Logger for better debugging capabilities.
 - Improve the tester, make it more faster, compatible with all the language and frameworks ans lightweight.
+- Make all the hardcoded values of the versions in the docker and tester dynamic 
+mention them in a file and call from there.

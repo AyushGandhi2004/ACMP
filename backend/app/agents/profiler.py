@@ -3,46 +3,10 @@ from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.agents.base import BaseAgent
+from app.agents.prompts import PROFILER_HUMAN_PROMPT, PROFILER_SYSTEM_PROMPT
 from app.graph.state import AgentState
 from app.core.config import get_settings
 from app.domain.enums import SupportedLanguage, SupportedFramework
-
-
-# ─────────────────────────────────────────
-# PROMPTS
-# Defined as constants at module level
-# Easy to tune without touching logic
-# ─────────────────────────────────────────
-
-SYSTEM_PROMPT = """
-You are an expert code analysis engine specialized in detecting 
-programming languages, frameworks, and version patterns.
-
-Your job is to analyze the provided source code and return a JSON object.
-
-STRICT RULES:
-- Return ONLY a valid JSON object
-- No explanations
-- No markdown
-- No backticks
-- No extra text of any kind
-
-JSON format to return:
-{
-    "language": "<detected language in lowercase>",
-    "framework": "<detected framework in lowercase or unknown>",
-    "version": "<detected version as string or unknown>"
-}
-
-Valid languages: python, javascript, typescript, java
-Valid frameworks: django, flask, fastapi, express, react, spring, unknown
-"""
-
-HUMAN_PROMPT = """
-Analyze this code and return the JSON detection result:
-
-{code}
-"""
 
 
 class ProfilerAgent(BaseAgent):
@@ -134,8 +98,8 @@ class ProfilerAgent(BaseAgent):
         original_code = state.get("original_code", "")
 
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT),
-            HumanMessage(content=HUMAN_PROMPT.format(code=original_code))
+            SystemMessage(content=PROFILER_SYSTEM_PROMPT),
+            HumanMessage(content=PROFILER_HUMAN_PROMPT.format(code=original_code))
         ]
 
         # Async LLM call — never use .invoke() in async context
